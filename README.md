@@ -1,7 +1,6 @@
 # DataChannelDotnet - C# WebRtc library
 
 [![Run .NET Tests](https://github.com/ZetrocDev/DataChannelDotnet/actions/workflows/Run-tests.yml/badge.svg)](https://github.com/ZetrocDev/DataChannelDotnet/actions/workflows/Run-tests.yml)
-
 [![Update libdatachannel](https://github.com/ZetrocDev/DataChannelDotnet/actions/workflows/Update-Bindings.yml/badge.svg)](https://github.com/ZetrocDev/DataChannelDotnet/actions/workflows/Update-Bindings.yml)
 
 DataChannelDotnet is a high performance, minimal overhead wrapper around [libdatachannel](https://github.com/paullouisageneau/libdatachannel) for WebRtc, it supports both datachannels and media tracks. Raw bindings are generated automatically via [clangsharp](https://github.com/dotnet/ClangSharp) using Github Actions, and are included in the DataChannel.Bindings package.
