@@ -1,0 +1,276 @@
+name: Update libdatachannel
+on:
+  workflow_dispatch:
+
+jobs:
+  get-latest-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      latest-tag: ${{ steps.set-output.outputs.latest-tag }}
+    steps:
+      - name: Get latest libdatachannel tag
+        id: set-output
+        run: |
+          LATEST_TAG=$(git ls-remote --tags https://github.com/paullouisageneau/libdatachannel.git | \
+                       grep -E "refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$" | \
+                       sed 's/.*refs\/tags\///' | \
+                       sort -V | tail -1)
+          echo "latest-tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+
+  build-libdatachannel-linux:
+    needs: get-latest-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check cache for compiled library
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/datachannel.so
+          key: libdatachannel-linux-${{ needs.get-latest-tag.outputs.latest-tag }}
+
+      - name: clone libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} --depth 1 --recurse-submodules https://github.com/paullouisageneau/libdatachannel.git
+          
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libssl-dev libnice-dev pkg-config
+
+      - name: Configure and build libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cmake -B build -S ./libdatachannel \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DNO_EXAMPLES=ON \
+            -DNO_TESTS=ON \
+            -DBUILD_SHARED_LIBS=ON
+          cmake --build build -j$(nproc)
+          
+          # Rename to standard name
+          real_file=$(readlink -f build/libdatachannel.so)
+          mv "$real_file" build/datachannel.so
+
+      - name: Save to cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/datachannel.so
+          key: libdatachannel-linux-${{ needs.get-latest-tag.outputs.latest-tag }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: datachannel-linux64
+          path: build/datachannel.so
+
+  build-libdatachannel-windows:
+    needs: get-latest-tag
+    runs-on: windows-latest
+    steps:
+      - name: Check cache for compiled library
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/datachannel.dll
+          key: libdatachannel-windows-${{ needs.get-latest-tag.outputs.latest-tag }}
+
+      - name: clone libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} --depth 1 --recurse-submodules https://github.com/paullouisageneau/libdatachannel.git
+
+      - name: Set up MSVC environment
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          
+      - name: Configure and build libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cmake -S libdatachannel -B build -G "Ninja" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DNO_EXAMPLES=ON `
+            -DNO_TESTS=ON `
+            -DBUILD_SHARED_LIBS=ON
+          cmake --build build --config Release
+          
+      - name: Save to cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/datachannel.dll
+          key: libdatachannel-windows-${{ needs.check-for-updates.outputs.submodule-hash }}
+
+      - name: Upload Windows DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: datachannel-win64
+          path: build/datachannel.dll
+
+  build-libdatachannel-macos:
+    needs: get-latest-tag
+    runs-on: macos-latest
+    steps:
+      - name: Check cache for compiled library
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: build/datachannel.dylib
+          key: libdatachannel-mac-${{ needs.get-latest-tag.outputs.latest-tag }}
+
+
+      - name: clone libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} --depth 1 --recurse-submodules https://github.com/paullouisageneau/libdatachannel.git
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: brew install cmake ninja openssl
+
+      - name: Configure and build libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cmake -B build -S ./libdatachannel -G "Ninja" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DNO_EXAMPLES=ON \
+            -DNO_TESTS=ON \
+            -DBUILD_SHARED_LIBS=ON \
+            -DOPENSSL_ROOT_DIR=$(brew --prefix openssl)
+          cmake --build build
+          
+          # Find the actual built library
+          BUILT_LIB=$(find build -name "libdatachannel*.dylib" -type f | head -1)
+          if [ -n "$BUILT_LIB" ]; then
+            echo "Found built library: $BUILT_LIB"
+            cp "$BUILT_LIB" build/datachannel.dylib
+            
+            # Verify the file size
+            ls -lh build/datachannel.dylib
+          else
+            echo "Error: No libdatachannel dylib found in build directory"
+            ls -la build/
+            exit 1
+          fi
+      - name: Save to cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/datachannel.dylib
+          key: libdatachannel-mac-${{ needs.get-latest-tag.outputs.latest-tag }}
+
+      - name: Upload macOS dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: datachannel-mac64
+          path: build/datachannel.dylib
+
+  Update-library:
+    needs: [get-latest-tag, build-libdatachannel-windows, build-libdatachannel-linux, build-libdatachannel-macos]
+    runs-on: windows-latest #Runs on windows currently as the clangsharp generator requires extra steps to run on linux
+    steps:
+      - name: Create directories
+        run: |
+          mkdir repo
+    
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          path: "repo"
+          token: ${{ secrets.GITHUB_TOKEN }}
+    
+      - name: Clone libdatachannel
+        run: |
+          git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} https://github.com/paullouisageneau/libdatachannel.git
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install ClangSharp
+        run: dotnet tool install --global ClangSharpPInvokeGenerator
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Copy libraries to correct locations
+        run: |
+          # Ensure directories exist
+          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs"
+          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs\Win64"
+          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs\Linux64"
+          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs\Mac64"
+          
+          # Copy files to correct locations
+          Copy-Item "artifacts\datachannel-win64\datachannel.dll" "repo\src\DataChannelDotnet.Bindings\Libs\Win64\"
+          Copy-Item "artifacts\datachannel-linux64\datachannel.so" "repo\src\DataChannelDotnet.Bindings\Libs\Linux64\"
+          Copy-Item "artifacts\datachannel-Mac64\datachannel.dylib" "repo\src\DataChannelDotnet.Bindings\Libs\Mac64\"
+
+      - name: Generate P/Invoke bindings
+        run: |
+          ClangSharpPInvokeGenerator `
+            -f ".\libdatachannel\include\rtc\rtc.h" `
+            -o ".\repo\src\DataChannelDotnet.Bindings\Rtc.cs" `
+            -n "DataChannelDotnet.Bindings" `
+            -l "datachannel" `
+            -m "Rtc" `
+            --config generate-aggressive-inlining `
+            --config generate-cpp-attributes `
+            --config generate-macro-bindings
+
+      - name: Update project version
+        run: |
+          $csprojPath = "repo/src/DataChannelDotnet.Bindings/DataChannelDotnet.Bindings.csproj"
+          $newVersion = "${{ needs.get-latest-tag.outputs.latest-tag }}"
+          
+          # Remove 'v' prefix if present
+          if ($newVersion.StartsWith('v')) {
+            $newVersion = $newVersion.Substring(1)
+          }
+
+          # Update version in csproj
+          $content = Get-Content $csprojPath -Raw
+          $content = $content -replace '<Version>.*?</Version>', "<Version>$newVersion</Version>"
+          $content = $content -replace '<AssemblyVersion>.*?</AssemblyVersion>', "<AssemblyVersion>$newVersion</AssemblyVersion>"
+          $content = $content -replace '<FileVersion>.*?</FileVersion>', "<FileVersion>$newVersion</FileVersion>"
+          Set-Content $csprojPath $content -Encoding utf8 -NoNewline
+
+      - name: Check for changes
+        id: verify-changes
+        run: |
+          cd repo
+          $changes = git status --porcelain
+          if ($changes) {
+            echo "has-changes=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "has-changes=false" >> $env:GITHUB_OUTPUT
+          }
+          
+      - name: Create Pull Request
+        if: steps.verify-changes.outputs.has-changes == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          path: "repo"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update libdatachannel to ${{ needs.get-latest-tag.outputs.latest-tag }}"
+          title: "Update libdatachannel to ${{ needs.get-latest-tag.outputs.latest-tag }}"
+          body: |
+            ## Summary
+            This PR updates libdatachannel libraries & bindings to version ${{ needs.get-latest-tag.outputs.latest-tag }}.
+
+            ## Changes
+            - Regenerated P/Invoke bindings
+            - Updated native libraries for Windows, Linux, and macOS
+            - Updated project version to match libdatachannel version
+            
+            Auto-generated by GitHub Actions.
+          branch: update-libdatachannel-${{ needs.get-latest-tag.outputs.latest-tag }}
+          delete-branch: true

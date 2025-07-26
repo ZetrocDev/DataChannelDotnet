@@ -1,0 +1,58 @@
+name: Publish NuGet Package on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Get tag version
+        id: get_version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Tag name is $TAG_NAME"
+          VERSION=${TAG_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run tests
+        run: dotnet test --logger:"console;verbosity=detailed"
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack with tag version
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          
+          dotnet pack src/DataChannelDotnet/DataChannelDotnet.csproj \
+            --configuration Release \
+            --output ./nupkg \
+            -p:PackageVersion=$VERSION
+      
+          dotnet pack src/DataChannelDotnet.Bindings/DataChannelDotnet.Bindings.csproj \
+            --configuration Release \
+            --output ./nupkg
+            
+      - name: Push to NuGet
+        run: |
+          dotnet nuget push ./nupkg/*.nupkg \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
