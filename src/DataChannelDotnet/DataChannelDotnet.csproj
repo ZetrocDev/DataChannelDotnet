@@ -18,9 +18,9 @@
 
   <ItemGroup>
 	  <None Include="../../README.md" Pack="true" PackagePath="\" />
-    <ProjectReference Include="..\DataChannelDotnet.Bindings\DataChannelDotnet.Bindings.csproj" />
+	  <ProjectReference Include="..\DataChannelDotnet.Bindings\DataChannelDotnet.Bindings.csproj" ExcludeAssets="All"  />
   </ItemGroup>
-	
+
 	<ItemGroup>
 		<PackageReference Include="DataChannelDotnet.Bindings" PrivateAssets="none" Version="[0.23.1]" />
 	</ItemGroup>
