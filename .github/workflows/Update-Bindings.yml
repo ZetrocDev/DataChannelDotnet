@@ -83,8 +83,9 @@ jobs:
           git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} --depth 1 --recurse-submodules https://github.com/paullouisageneau/libdatachannel.git
 
       - name: Update OpenSSL version
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          choco update openssl
+          choco install openssl
 
       - name: Set up MSVC environment
         if: steps.cache.outputs.cache-hit != 'true'
