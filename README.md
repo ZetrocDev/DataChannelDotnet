@@ -49,6 +49,13 @@ hostChannel.OnOpen += channel =>
 
 Raw C bindings can also be used via the static Rtc class in DataChannel.Bindings. Check the [C API Documentation](https://github.com/paullouisageneau/libdatachannel/blob/master/DOC.md) from Libdatachannel for usage. Note that using the raw bindings will require unsafe code to be enabled in your project.
 
+
+### Logging
+You can enable Libdatachannel log output by calling RtcLog.Initialize(level, callback);
+
+### Unhandled exceptions
+If an unhandled exception is thrown on an RtcThread callback, RtcTools.UnhandledException will be raised. 
+
 ## Performance
 This is a thin wrapper, so the performance should be very close to the native Libdatachannel library. Sending & receiving data (via Track or Datachannel) is entirely allocation free. 
 
