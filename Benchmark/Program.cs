@@ -4,21 +4,23 @@ using DataChannelDotnet;
 using DataChannelDotnet.Data;
 using DataChannelDotnet.Events;
 using DataChannelDotnet.Impl;
+using System.Drawing;
 
 BenchmarkRunner.Run<Bench>();
 
 [MemoryDiagnoser(displayGenColumns: true)]
 public class Bench
 {
+
     private IRtcPeerConnection _hostPeer = null!;
     private IRtcDataChannel _hostDataChannel = null!;
 
     private IRtcPeerConnection _clientPeer = null!;
     private IRtcDataChannel _clientDataChannel = null!;
 
-    const int _maxMessageSize = 1000*256;
-    private byte[] _bytes = new byte[1000*1000*256];
-    private int _dataSize = 50*1000*1000;
+    const int _maxMessageSize = 1000 * 256;
+    private byte[] _bytes = new byte[1000 * 1000 * 256];
+    private long _dataSize = 50 * 1000 * 1000;
 
     private ManualResetEventSlim _waitEvent = new(false);
 
@@ -73,10 +75,9 @@ public class Bench
         }
     }
 
-    [Benchmark]
-    public void SendAndReceive100MB()
+    private void SendAndReceive(long size)
     {
-        _dataSize = 1000 * 1000 * 100; // 50 MB
+        _dataSize = size;
 
         try
         {
@@ -94,75 +95,30 @@ public class Bench
         {
             _waitEvent.Reset();
         }
+    }
+
+    [Benchmark]
+    public void SendAndReceive100MB()
+    {
+        SendAndReceive(100 * 1000 * 1000);
     }
 
     [Benchmark]
     public void SendAndReceive50MB()
     {
-        _dataSize = 1000*1000 * 50; // 50 MB
-
-        try
-        {
-            for (int i = 0; i < (_dataSize/_maxMessageSize)+1; i++)
-            {
-                _hostDataChannel.Send(new Span<byte>(_bytes, 0, _maxMessageSize));
-            }
-
-            if(!_waitEvent.Wait(30000))
-            {
-                throw new TimeoutException("Data was not received in time.");
-            }
-        }
-        finally
-        {
-            _waitEvent.Reset();
-        }
+        SendAndReceive(50 * 1000 * 1000);
     }
 
     [Benchmark]
     public void SendAndReceive1MB()
     {
-        _dataSize = 1000 * 1000; // 1 MB
-
-        try
-        {
-            for (int i = 0; i < (_dataSize / _maxMessageSize) + 1; i++)
-            {
-                _hostDataChannel.Send(new Span<byte>(_bytes, 0, _maxMessageSize));
-            }
-
-            if (!_waitEvent.Wait(30000))
-            {
-                throw new TimeoutException("Data was not received in time.");
-            }
-        }
-        finally
-        {
-            _waitEvent.Reset();
-        }
+        SendAndReceive(1000 * 1000);
     }
 
     [Benchmark]
     public void SendAndReceive256KB()
     {
-        _dataSize = 256*1000;
-
-        try
-        {
-            for (int i = 0; i < (_dataSize / _maxMessageSize) + 1; i++)
-            {
-                _hostDataChannel.Send(new Span<byte>(_bytes, 0, _maxMessageSize));
-            }
-
-            if (!_waitEvent.Wait(30000))
-            {
-                throw new TimeoutException("Data was not received in time.");
-            }
-        }
-        finally
-        {
-            _waitEvent.Reset();
-        }
+        SendAndReceive(256 * 1000);
     }
 
     [IterationSetup]
