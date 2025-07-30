@@ -23,6 +23,17 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<TargetPath>datachannel.dll</TargetPath>
 		</None>
+
+		<None Include="Libs/Win64/libcrypto-3-x64.dll" Pack="true" PackagePath="runtimes/win-x64/native">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<TargetPath>libcrypto-3-x64.dll</TargetPath>
+		</None>
+
+		<None Include="Libs/Win64/libssl-3-x64.dll" Pack="true" PackagePath="runtimes/win-x64/native">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<TargetPath>libssl-3-x64.dll</TargetPath>
+		</None>
+
 		<None Include="Libs/Linux64/datachannel.so" Pack="true" PackagePath="runtimes/linux-x64/native">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 			<TargetPath>datachannel.so</TargetPath>
@@ -32,5 +43,4 @@
 			<TargetPath>datachannel.dylib</TargetPath>
 		</None>
 	</ItemGroup>
-
 </Project>
