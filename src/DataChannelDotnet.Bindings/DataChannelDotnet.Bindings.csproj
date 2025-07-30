@@ -12,7 +12,7 @@
 		<RepositoryType>git</RepositoryType>
 		<PlatformTarget>x64</PlatformTarget>
 		<Prefer32Bit>false</Prefer32Bit>
-		<Version>0.23.1</Version>
+		<Version>0.23.1.1</Version>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
