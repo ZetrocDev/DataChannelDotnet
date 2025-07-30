@@ -48,3 +48,15 @@ hostChannel.OnOpen += channel =>
 ```
 
 Raw C bindings can also be used via the static Rtc class in DataChannel.Bindings. Check the [C API Documentation](https://github.com/paullouisageneau/libdatachannel/blob/master/DOC.md) from Libdatachannel for usage. Note that using the raw bindings will require unsafe code to be enabled in your project.
+
+## Performance
+This is a thin wrapper, so the performance should be very close to the native Libdatachannel library. Sending & receiving data (via Track or Datachannel) is entirely allocation free. 
+
+Here is the results of a [throughput benchmark](https://github.com/ZetrocDev/DataChannelDotnet/blob/main/Benchmark/Program.cs), sending & receiving data on localhost, running on .net 9 on a Ryzen 5500. This shows around 55-60MB/s throughput, which is consistent with [Libdatachannels own benchmark](https://github.com/paullouisageneau/libdatachannel/tree/master/examples/client-benchmark). This also shows zero allocation sending & receiving. It should be noted that WebRtc is generally not designed for large file transfer scenarios.
+
+| Method              | Mean         | Error      | StdDev     | Allocated |
+|-------------------- |-------------:|-----------:|-----------:|----------:|
+| SendAndReceive100MB | 1,728.885 ms | 12.9256 ms | 12.0906 ms |         - |
+| SendAndReceive50MB  |   849.148 ms | 11.5134 ms | 10.7696 ms |         - |
+| SendAndReceive1MB   |    16.517 ms |  0.3237 ms |  0.3854 ms |         - |
+| SendAndReceive256KB |     3.818 ms |  0.1247 ms |  0.3657 ms |         - |
