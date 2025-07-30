@@ -212,7 +212,7 @@ public sealed class RtcDataChannel : IRtcDataChannel
     {
         for (int i = 0; i < 100; i++)
         {
-            if (!IsOpen)
+            if (Rtc.rtcIsOpen(_channelId) == 0)
                 return;
 
             Thread.Sleep(25);

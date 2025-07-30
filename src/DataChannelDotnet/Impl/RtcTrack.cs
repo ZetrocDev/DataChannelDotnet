@@ -380,7 +380,7 @@ public sealed class RtcTrack : IRtcTrack
     {
         for (int i = 0; i < 100; i++)
         {
-            if (!IsOpen)
+            if (Rtc.rtcIsOpen(_trackId) == 0)
                 return;
 
             Thread.Sleep(25);
