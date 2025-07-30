@@ -74,7 +74,7 @@ jobs:
         id: cache
         uses: actions/cache@v4
         with:
-          path: build/datachannel.dll
+          path: libdatachannel/build/datachannel.dll
           key: libdatachannel-windows-${{ needs.get-latest-tag.outputs.latest-tag }}
 
       - name: clone libdatachannel
@@ -87,29 +87,34 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-          
+
+      - name: Install OpenSSL 3.x
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          choco install openssl --version=3.5.1 --no-progress --confirm
+                
       - name: Configure and build libdatachannel
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          cmake -S libdatachannel -B build -G "Ninja" `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DNO_EXAMPLES=ON `
-            -DNO_TESTS=ON `
-            -DBUILD_SHARED_LIBS=ON
-          cmake --build build --config Release
+          cd libdatachannel
+          cmake -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release `
+            -DNO_EXAMPLES=ON -DNO_TESTS=ON -DBUILD_SHARED_LIBS=ON
+          cd build
+          nmake
+          cd ..
           
       - name: Save to cache
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: build/datachannel.dll
-          key: libdatachannel-windows-${{ needs.check-for-updates.outputs.submodule-hash }}
+          path: libdatachannel/build/datachannel.dll
+          key: libdatachannel-windows-${{ needs.get-latest-tag.outputs.latest-tag }}
 
       - name: Upload Windows DLL
         uses: actions/upload-artifact@v4
         with:
           name: datachannel-win64
-          path: build/datachannel.dll
+          path: libdatachannel/build/datachannel.dll
 
   build-libdatachannel-macos:
     needs: get-latest-tag
@@ -188,6 +193,11 @@ jobs:
         run: |
           git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} https://github.com/paullouisageneau/libdatachannel.git
 
+      - name: Install OpenSSL 3.x  #Used to copy libcrypto-3-x64.dll & libssl-3-x64.dll
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          choco install openssl --version=3.5.1 --no-progress --confirm
+
       - name: Set up MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -211,6 +221,9 @@ jobs:
           
           # Copy files to correct locations
           Copy-Item "artifacts\datachannel-win64\datachannel.dll" "repo\src\DataChannelDotnet.Bindings\Libs\Win64\"
+          Copy-Item "C:\program files\openssl\libcrypto-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\Libs\Win64\"
+          Copy-Item "C:\program files\openssl\libssl-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\Libs\Win64\"
+          
           Copy-Item "artifacts\datachannel-linux64\datachannel.so" "repo\src\DataChannelDotnet.Bindings\Libs\Linux64\"
           Copy-Item "artifacts\datachannel-Mac64\datachannel.dylib" "repo\src\DataChannelDotnet.Bindings\Libs\Mac64\"
 
@@ -225,24 +238,7 @@ jobs:
             --config generate-aggressive-inlining `
             --config generate-cpp-attributes `
             --config generate-macro-bindings
-
-      - name: Update project version
-        run: |
-          $csprojPath = "repo/src/DataChannelDotnet.Bindings/DataChannelDotnet.Bindings.csproj"
-          $newVersion = "${{ needs.get-latest-tag.outputs.latest-tag }}"
-          
-          # Remove 'v' prefix if present
-          if ($newVersion.StartsWith('v')) {
-            $newVersion = $newVersion.Substring(1)
-          }
-
-          # Update version in csproj
-          $content = Get-Content $csprojPath -Raw
-          $content = $content -replace '<Version>.*?</Version>', "<Version>$newVersion</Version>"
-          $content = $content -replace '<AssemblyVersion>.*?</AssemblyVersion>', "<AssemblyVersion>$newVersion</AssemblyVersion>"
-          $content = $content -replace '<FileVersion>.*?</FileVersion>', "<FileVersion>$newVersion</FileVersion>"
-          Set-Content $csprojPath $content -Encoding utf8 -NoNewline
-
+            
       - name: Check for changes
         id: verify-changes
         run: |
