@@ -39,6 +39,8 @@ public sealed class RtcTrack : IRtcTrack
     private readonly int _trackId;
     private bool _disposed;
 
+    private volatile bool _closeEventRaised = false;
+
     internal unsafe RtcTrack(int trackId)
     {
         _trackId = trackId;
@@ -334,8 +336,9 @@ public sealed class RtcTrack : IRtcTrack
         {
             if (!RtcThread.TryGetRtcObjectInstance(user, out RtcTrack? instance))
                 return;
-            
+
             var cb = instance.OnClose;
+            instance._closeEventRaised = true;
             cb?.Invoke(instance);
         }
         catch (Exception ex)
@@ -380,7 +383,7 @@ public sealed class RtcTrack : IRtcTrack
     {
         for (int i = 0; i < 100; i++)
         {
-            if (Rtc.rtcIsOpen(_trackId) == 0)
+            if (_closeEventRaised)
                 return;
 
             Thread.Sleep(25);

@@ -41,10 +41,13 @@ public class ConnectionTest
         bool clientClosed = false, hostClosed = false;
         Lock syncLock = new();
 
-        ManualResetEventSlim connectedEvent = new ManualResetEventSlim();
-        ManualResetEventSlim binaryReceivedEvent = new  ManualResetEventSlim();
-        ManualResetEventSlim textReceivedEvent = new ManualResetEventSlim();
-        ManualResetEventSlim closedEvent = new ManualResetEventSlim();
+        using ManualResetEventSlim connectedEvent = new ManualResetEventSlim();
+        using ManualResetEventSlim binaryReceivedEvent = new  ManualResetEventSlim();
+        using ManualResetEventSlim textReceivedEvent = new ManualResetEventSlim();
+        using ManualResetEventSlim closedEvent = new ManualResetEventSlim();
+
+        using ManualResetEventSlim channelOpenedEvent = new ManualResetEventSlim();
+        using ManualResetEventSlim channelClosedEvent = new ManualResetEventSlim();
 
         host.OnConnectionStateChange += (_, state) =>
         {
@@ -125,11 +128,13 @@ public class ConnectionTest
             channel.OnOpen += _ =>
             {
                 _output.WriteLine($"Client: channel {channel.Label} open");
+                channelOpenedEvent.Set();
             };
 
             channel.OnClose += _ =>
             {
                 _output.WriteLine($"Client: channel {channel.Label} closed");
+                channelClosedEvent.Set();
             };
 
             channel.OnBinaryReceivedSafe += (_, evt) =>
@@ -145,10 +150,7 @@ public class ConnectionTest
             };
         };
         var hostChannel1 = host.CreateDataChannel(new RtcCreateDataChannelArgs() { Label = "texttest" });
-        var hostChannel2 = host.CreateDataChannel(new RtcCreateDataChannelArgs() { Label = "texttest2" });
-        var hostChannel3 = host.CreateDataChannel(new RtcCreateDataChannelArgs() { Label = "texttest3" });
 
-        
         hostChannel1.OnOpen += _ =>
         {
             _output.WriteLine("Sending binary data");
@@ -159,7 +161,10 @@ public class ConnectionTest
 
         if(!connectedEvent.Wait(TimeSpan.FromSeconds(5)))
             Assert.Fail("The peers did not connect in time");
-        
+
+        if(!channelOpenedEvent.Wait(TimeSpan.FromSeconds(5)))
+            Assert.Fail("The client did not open the data channel in time");
+
         _output.WriteLine($"Host local description: {host.LocalDescription}");
         _output.WriteLine($"Host local description type: {host.LocalDescriptionType}");
         _output.WriteLine($"Host remote description: {host.RemoteDescription}");
@@ -193,8 +198,11 @@ public class ConnectionTest
         
         host.Dispose();
         client.Dispose();
-        
-        if(!closedEvent.Wait(TimeSpan.FromSeconds(5)))
+
+        if(!channelClosedEvent.Wait(TimeSpan.FromSeconds(5)))
+            Assert.Fail("The DataChannel close event was not raised");
+
+        if (!closedEvent.Wait(TimeSpan.FromSeconds(5)))
             Assert.Fail("Client or host connection did not close in time");
 
         _output.WriteLine("Peers closed");

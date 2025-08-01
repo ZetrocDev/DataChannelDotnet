@@ -42,6 +42,7 @@ public sealed class RtcPeerConnection : IRtcPeerConnection
     private readonly List<RtcTrack> _tracks = new List<RtcTrack>();
 
     private bool _disposed;
+    private bool _closeEventRaised;
 
     public RtcPeerConnection(RtcPeerConfiguration configuration)
     {
@@ -435,6 +436,12 @@ public sealed class RtcPeerConnection : IRtcPeerConnection
 
             instance.ConnectionState = connectionState;
             Action<IRtcPeerConnection, rtcState>? callback = instance.OnConnectionStateChange;
+
+            if (connectionState == rtcState.RTC_CLOSED)
+            {
+                instance._closeEventRaised = true;
+            }
+
             callback?.Invoke(instance, connectionState);
         }
         catch (Exception ex)
@@ -474,7 +481,7 @@ public sealed class RtcPeerConnection : IRtcPeerConnection
     {
         for (int i = 0; i < 100; i++)
         {
-            if (ConnectionState == rtcState.RTC_CLOSED)
+            if (_closeEventRaised)
                 return;
 
             Thread.Sleep(25);

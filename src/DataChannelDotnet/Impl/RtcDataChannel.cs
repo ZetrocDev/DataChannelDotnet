@@ -27,6 +27,7 @@ public sealed class RtcDataChannel : IRtcDataChannel
     private bool _disposed;
     private string? _label;
     private GCHandle _thisHandle;
+    private bool _closeEventRaised;
 
     internal unsafe RtcDataChannel(int channelId)
     {
@@ -106,12 +107,11 @@ public sealed class RtcDataChannel : IRtcDataChannel
 
             var cb = instance.OnError;
 
-            if (instance._disposed || cb is null)
-                return;
-
-            string errorStr = Utf8StringMarshaller.ConvertToManaged((byte*)buffer) ?? string.Empty;
-
-            cb.Invoke(instance, errorStr);
+            if(cb is not null)
+            {
+                string errorStr = Utf8StringMarshaller.ConvertToManaged((byte*)buffer) ?? string.Empty;
+                cb?.Invoke(instance, errorStr);
+            }
         }
         catch (Exception ex)
         {
@@ -128,11 +128,8 @@ public sealed class RtcDataChannel : IRtcDataChannel
                 return;
 
             var cb = instance.OnClose;
-            
-            if (instance._disposed || cb is null)
-                return;
-
-            cb.Invoke(instance);
+            instance._closeEventRaised = true;
+            cb?.Invoke(instance);
         }
         catch (Exception ex)
         {
@@ -212,7 +209,7 @@ public sealed class RtcDataChannel : IRtcDataChannel
     {
         for (int i = 0; i < 100; i++)
         {
-            if (Rtc.rtcIsOpen(_channelId) == 0)
+            if (_closeEventRaised)
                 return;
 
             Thread.Sleep(25);
