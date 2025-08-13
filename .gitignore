@@ -27,6 +27,7 @@ mono_crash.*
 x64/
 x86/
 [Ww][Ii][Nn]32/
+!src/DataChannelDotnet.Bindings/Libs/Win32
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
