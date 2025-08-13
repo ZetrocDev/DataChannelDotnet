@@ -7,7 +7,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Title>Managed C# WebRtc library</Title>
         <Authors>ZetrocDev</Authors>
-        <Description>Provides a managed WebRtc wrapper for libdatachannel (64 bit Windows/Linux/Mac only)</Description>
+        <Description>Provides a managed WebRtc wrapper for libdatachannel (Supports: win-x64, win-x86, linux-x64, osx-x64) </Description>
         <RepositoryUrl>https://github.com/ZetrocDev/DataChannelDotnet</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <Version>0.0.0</Version>

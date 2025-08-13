@@ -30,6 +30,7 @@ public static class ImportResolver
                           RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "libdatachannel.dylib" :
                           "libdatachannel.so";
 
+            // runtimes/win-x64/native/datachannel.dll
             var nativeLibPath = Path.Combine(assemblyDir, "runtimes", rid, "native", fileName);
 
             if (File.Exists(nativeLibPath))
