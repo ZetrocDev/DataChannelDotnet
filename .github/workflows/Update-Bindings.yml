@@ -88,10 +88,10 @@ jobs:
         with:
           arch: x64
 
-      - name: Install OpenSSL 3.x
+      - name: Install OpenSSL
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          choco install openssl --version=3.5.1 --no-progress --confirm
+          choco install openssl --no-progress --confirm
                 
       - name: Configure and build libdatachannel
         if: steps.cache.outputs.cache-hit != 'true'
@@ -115,6 +115,87 @@ jobs:
         with:
           name: datachannel-win64
           path: libdatachannel/build/datachannel.dll
+
+  build-libdatachannel-windows32:
+    needs: get-latest-tag
+    runs-on: windows-latest
+    steps:
+      - name: Check cache for compiled library
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: libdatachannel/build/datachannel.dll
+          key: libdatachannel-windows32-${{ needs.get-latest-tag.outputs.latest-tag }}
+
+      - name: Check cache for 32 bit libcrypto
+        id: libcrypto-32-cache
+        uses: actions/cache@v4
+        with:
+          path: "C:\\Program Files (x86)\\OpenSSL-Win32\\libcrypto-3.dll"
+          key: libcrypto-win32
+
+      - name: Check cache for 32 bit libssl
+        id: libssl-32-cache
+        uses: actions/cache@v4
+        with:
+          path: "C:\\Program Files (x86)\\OpenSSL-Win32\\libssl-3.dll"
+          key: libssl-win32
+
+      - name: clone libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} --depth 1 --recurse-submodules https://github.com/paullouisageneau/libdatachannel.git
+
+      - name: Set up MSVC environment
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+
+      - name: Install 32-bit OpenSSL
+        if: |
+           steps.cache.outputs.cache-hit != 'true' ||
+           steps.libcrypto-32-cache.outputs.cache-hit != 'true' ||
+           steps.libssl-32-cache.outputs.cache-hit != 'true'
+        run: |
+          Invoke-WebRequest -Uri https://slproweb.com/download/Win32OpenSSL-3_5_2.msi -OutFile openssl-x86.msi
+          Start-Process msiexec.exe -ArgumentList '/i', 'openssl-x86.msi', '/qn', '/norestart' -Wait -NoNewWindow
+        shell: pwsh
+        
+      - name: Configure and build libdatachannel
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          cd libdatachannel
+          cmake -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release `
+            -DNO_EXAMPLES=ON -DNO_TESTS=ON -DBUILD_SHARED_LIBS=ON
+          cd build
+          nmake
+          cd ..
+          
+      - name: Save to cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: libdatachannel/build/datachannel.dll
+          key: libdatachannel-windows32-${{ needs.get-latest-tag.outputs.latest-tag }}
+
+      - name: Upload Windows x86 DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: datachannel-win32
+          path: libdatachannel/build/datachannel.dll
+
+      - name: Upload libcrypto.dll for win32
+        uses: actions/upload-artifact@v4
+        with:
+          name: libcrypto-win32
+          path: "C:\\Program Files (x86)\\OpenSSL-Win32\\libcrypto-3.dll"
+
+      - name: Upload libssl-3.dll for win32
+        uses: actions/upload-artifact@v4
+        with:
+          name: libssl-win32
+          path: "C:\\Program Files (x86)\\OpenSSL-Win32\\libssl-3.dll"
 
   build-libdatachannel-macos:
     needs: get-latest-tag
@@ -175,98 +256,100 @@ jobs:
           path: build/datachannel.dylib
 
   Update-library:
-    needs: [get-latest-tag, build-libdatachannel-windows, build-libdatachannel-linux, build-libdatachannel-macos]
-    runs-on: windows-latest #Runs on windows currently as the clangsharp generator requires extra steps to run on linux
-    steps:
-      - name: Create directories
-        run: |
-          mkdir repo
-    
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: false
-          path: "repo"
-          token: ${{ secrets.GITHUB_TOKEN }}
-    
-      - name: Clone libdatachannel
-        run: |
-          git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} https://github.com/paullouisageneau/libdatachannel.git
-
-      - name: Install OpenSSL 3.x  #Used to copy libcrypto-3-x64.dll & libssl-3-x64.dll
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          choco install openssl --version=3.5.1 --no-progress --confirm
-
-      - name: Set up MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: Install ClangSharp
-        run: dotnet tool install --global ClangSharpPInvokeGenerator
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Copy libraries to correct locations
-        run: |
-          # Ensure directories exist
-          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs"
-          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs\Win64"
-          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs\Linux64"
-          New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\Libs\Mac64"
-          
-          # Copy files to correct locations
-          Copy-Item "artifacts\datachannel-win64\datachannel.dll" "repo\src\DataChannelDotnet.Bindings\Libs\Win64\"
-          Copy-Item "C:\program files\openssl\libcrypto-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\Libs\Win64\"
-          Copy-Item "C:\program files\openssl\libssl-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\Libs\Win64\"
-          
-          Copy-Item "artifacts\datachannel-linux64\datachannel.so" "repo\src\DataChannelDotnet.Bindings\Libs\Linux64\"
-          Copy-Item "artifacts\datachannel-Mac64\datachannel.dylib" "repo\src\DataChannelDotnet.Bindings\Libs\Mac64\"
-
-      - name: Generate P/Invoke bindings
-        run: |
-          ClangSharpPInvokeGenerator `
-            -f ".\libdatachannel\include\rtc\rtc.h" `
-            -o ".\repo\src\DataChannelDotnet.Bindings\Rtc.cs" `
-            -n "DataChannelDotnet.Bindings" `
-            -l "datachannel" `
-            -m "Rtc" `
-            --config generate-aggressive-inlining `
-            --config generate-cpp-attributes `
-            --config generate-macro-bindings
+      needs: [get-latest-tag, build-libdatachannel-windows, build-libdatachannel-windows32, build-libdatachannel-linux, build-libdatachannel-macos]
+      runs-on: windows-latest #Runs on windows currently as the clangsharp generator requires extra steps to run on linux
+      steps:
+        - name: Create directories
+          run: |
+            mkdir repo
+      
+        - name: Checkout repository
+          uses: actions/checkout@v4
+          with:
+            submodules: false
+            path: "repo"
+            token: ${{ secrets.GITHUB_TOKEN }}
+      
+        - name: Clone libdatachannel
+          run: |
+            git clone --branch ${{ needs.get-latest-tag.outputs.latest-tag }} https://github.com/paullouisageneau/libdatachannel.git
+  
+        - name: Install OpenSSL  #Used to copy libcrypto-3-x64.dll & libssl-3-x64.dll
+          if: steps.cache.outputs.cache-hit != 'true'
+          run: |
+            choco install openssl --no-progress --confirm
+  
+        - name: Set up MSVC environment
+          uses: ilammy/msvc-dev-cmd@v1
+          with:
+            arch: x64
+  
+        - name: Install ClangSharp
+          run: dotnet tool install --global ClangSharpPInvokeGenerator
+  
+        - name: Download artifacts
+          uses: actions/download-artifact@v4
+          with:
+            path: artifacts
+  
+        - name: Copy libraries to correct locations
+          run: |
+            # Ensure directories exist
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\linux-x64\native"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\osx-x64\native"
             
-      - name: Check for changes
-        id: verify-changes
-        run: |
-          cd repo
-          $changes = git status --porcelain
-          if ($changes) {
-            echo "has-changes=true" >> $env:GITHUB_OUTPUT
-          } else {
-            echo "has-changes=false" >> $env:GITHUB_OUTPUT
-          }
-          
-      - name: Create Pull Request
-        if: steps.verify-changes.outputs.has-changes == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          path: "repo"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: update libdatachannel to ${{ needs.get-latest-tag.outputs.latest-tag }}"
-          title: "Update libdatachannel to ${{ needs.get-latest-tag.outputs.latest-tag }}"
-          body: |
-            ## Summary
-            This PR updates libdatachannel libraries & bindings to version ${{ needs.get-latest-tag.outputs.latest-tag }}.
-
-            ## Changes
-            - Regenerated P/Invoke bindings
-            - Updated native libraries for Windows, Linux, and macOS
-            - Updated project version to match libdatachannel version
+            Copy-Item "artifacts\datachannel-win64\datachannel.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native\"
+            Copy-Item "C:\program files\openssl\libcrypto-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native\"
+            Copy-Item "C:\program files\openssl\libssl-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native\"
+            Copy-Item "artifacts\datachannel-win32\datachannel.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native\"
+            Copy-Item "artifacts\libcrypto-win32\libcrypto-3.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native\"
+            Copy-Item "artifacts\libssl-win32\libssl-3.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native\"
+            Copy-Item "artifacts\datachannel-linux64\datachannel.so" "repo\src\DataChannelDotnet.Bindings\runtimes\linux-x64\native\"
+            Copy-Item "artifacts\datachannel-Mac64\datachannel.dylib" "repo\src\DataChannelDotnet.Bindings\runtimes\osx-x64\native\"
+  
+        - name: Generate P/Invoke bindings
+          run: |
+            ClangSharpPInvokeGenerator `
+              -f ".\libdatachannel\include\rtc\rtc.h" `
+              -o ".\repo\src\DataChannelDotnet.Bindings\Rtc.cs" `
+              -n "DataChannelDotnet.Bindings" `
+              -l "datachannel" `
+              -m "Rtc" `
+              --config generate-aggressive-inlining `
+              --config generate-cpp-attributes `
+              --config generate-macro-bindings
+              
+        - name: Check for changes
+          id: verify-changes
+          run: |
+            cd repo
+            $changes = git status --porcelain
+            if ($changes) {
+              echo "has-changes=true" >> $env:GITHUB_OUTPUT
+            } else {
+              echo "has-changes=false" >> $env:GITHUB_OUTPUT
+            }
             
-            Auto-generated by GitHub Actions.
-          branch: update-libdatachannel-${{ needs.get-latest-tag.outputs.latest-tag }}
-          delete-branch: true
+        - name: Create Pull Request
+          if: steps.verify-changes.outputs.has-changes == 'true'
+          uses: peter-evans/create-pull-request@v5
+          with:
+            path: "repo"
+            token: ${{ secrets.GITHUB_TOKEN }}
+            commit-message: "chore: update libdatachannel to ${{ needs.get-latest-tag.outputs.latest-tag }}"
+            title: "Update libdatachannel to ${{ needs.get-latest-tag.outputs.latest-tag }}"
+            body: |
+              ## Summary
+              This PR updates libdatachannel libraries & bindings to version ${{ needs.get-latest-tag.outputs.latest-tag }}.
+  
+              ## Changes
+              - Regenerated P/Invoke bindings
+              - Updated native libraries for Windows, Linux, and macOS
+              - Updated project version to match libdatachannel version
+              
+              Auto-generated by GitHub Actions.
+            branch: update-libdatachannel-${{ needs.get-latest-tag.outputs.latest-tag }}
+            delete-branch: true
