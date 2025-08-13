@@ -17,32 +17,47 @@ public static class ImportResolver
         NativeLibrary.SetDllImportResolver(typeof(ImportResolver).Assembly, DllImportResolver);
     }
 
-    //This is here because we need to decide which native libraries to load, if the user has not specified
-    //an RID.
+    //This is here because we need to decide which native libraries to load if the user has not specified
+    //an RID. If this RID is set, the native libraries will be copied to the root of the build directory, otherwise
+    //we need to figure out which file to load.
+
+    //It seems like ubuntu (at least of the github actions runner) uses an ubuntu specific RID instead of linux-x64.
     private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
     {
         if (libraryName == LibraryName)
         {
             var assemblyDir = Path.GetDirectoryName(assembly.Location) ?? AppContext.BaseDirectory;
 
-            var rid = RuntimeInformation.RuntimeIdentifier;
-            var fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "datachannel.dll" :
-                          RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "libdatachannel.dylib" :
-                          "libdatachannel.so";
+            string? fileName = null;
+            string? rid = null;
 
-            // runtimes/win-x64/native/datachannel.dll
-            var nativeLibPath = Path.Combine(assemblyDir, "runtimes", rid, "native", fileName);
-
-            if (File.Exists(nativeLibPath))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return NativeLibrary.Load(nativeLibPath);
+                fileName = "datachannel.dll";
+                rid = Environment.Is64BitProcess ? "win-x64" : "win-x86";
+            }else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                fileName = "datachannel.so";
+                rid = "linux-x64";
+            }else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                fileName = "datachannel.dylib";
+                rid = "osx-x64";
             }
 
-            var fallbackPath = Path.Combine(assemblyDir, fileName);
+            if (rid is null || fileName is null)
+                return IntPtr.Zero;
+
+            string runtimeSpecificPath = Path.Combine(assemblyDir, "runtimes", rid, "native", fileName);
+
+            if (File.Exists(runtimeSpecificPath))
+                return NativeLibrary.Load(runtimeSpecificPath);
+
+            string fallbackPath = Path.Combine(assemblyDir, fileName);
+
             if (File.Exists(fallbackPath))
-            {
                 return NativeLibrary.Load(fallbackPath);
-            }
+
         }
 
         return IntPtr.Zero;
