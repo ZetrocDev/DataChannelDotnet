@@ -285,7 +285,7 @@ jobs:
             arch: x64
   
         - name: Install ClangSharp
-          run: dotnet tool install --global ClangSharpPInvokeGenerator
+          run: dotnet tool install --global ClangSharpPInvokeGenerator --version 20.1.2.1
   
         - name: Download artifacts
           uses: actions/download-artifact@v4
