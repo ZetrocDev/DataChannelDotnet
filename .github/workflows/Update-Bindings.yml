@@ -216,7 +216,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: brew install cmake ninja openssl
+        run: brew install ninja openssl
 
       - name: Configure and build libdatachannel
         if: steps.cache.outputs.cache-hit != 'true'
