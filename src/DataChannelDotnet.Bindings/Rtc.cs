@@ -235,6 +235,27 @@ namespace DataChannelDotnet.Bindings
 
         [NativeTypeName("uint16_t")]
         public ushort playoutDelayMax;
+
+        [NativeTypeName("uint8_t")]
+        public byte colorSpaceId;
+
+        [NativeTypeName("uint8_t")]
+        public byte colorChromaSitingHorz;
+
+        [NativeTypeName("uint8_t")]
+        public byte colorChromaSitingVert;
+
+        [NativeTypeName("uint8_t")]
+        public byte colorRange;
+
+        [NativeTypeName("uint8_t")]
+        public byte colorPrimaries;
+
+        [NativeTypeName("uint8_t")]
+        public byte colorTransfer;
+
+        [NativeTypeName("uint8_t")]
+        public byte colorMatrix;
     }
 
     public unsafe partial struct rtcSsrcForTypeInit
