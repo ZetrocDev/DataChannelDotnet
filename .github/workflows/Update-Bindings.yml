@@ -158,7 +158,7 @@ jobs:
            steps.libcrypto-32-cache.outputs.cache-hit != 'true' ||
            steps.libssl-32-cache.outputs.cache-hit != 'true'
         run: |
-          Invoke-WebRequest -Uri https://slproweb.com/download/Win32OpenSSL-3_5_2.msi -OutFile openssl-x86.msi
+          Invoke-WebRequest -Uri https://slproweb.com/download/Win32OpenSSL-3_6_0.msi -OutFile openssl-x86.msi
           Start-Process msiexec.exe -ArgumentList '/i', 'openssl-x86.msi', '/qn', '/norestart' -Wait -NoNewWindow
         shell: pwsh
         
