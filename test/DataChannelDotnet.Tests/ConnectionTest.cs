@@ -16,8 +16,6 @@ public class ConnectionTest
         _output = output;
     }
     
-    
-    //some testsAGDSDGSDGA dfhfd
     [Fact]
     //Connect
     //Send & receive binary

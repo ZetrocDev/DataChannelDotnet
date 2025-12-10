@@ -19,11 +19,37 @@
         <None Include="../../README.md" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(IsPackable)' != 'true' ">
-        <ProjectReference Include="..\DataChannelDotnet.Bindings\DataChannelDotnet.Bindings.csproj"/>
-    </ItemGroup>
+    <ItemGroup>
+        <None Include="runtimes/win-x64/native/datachannel.dll" Pack="true" PackagePath="runtimes/win-x64/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
 
-    <ItemGroup Condition=" '$(IsPackable)' == 'true' ">
-        <PackageReference Include="DataChannelDotnet.Bindings" Version="[0.23.2]"/>
+        <None Include="runtimes/win-x64/native/libcrypto-3-x64.dll" Pack="true" PackagePath="runtimes/win-x64/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+
+        <None Include="runtimes/win-x64/native/libssl-3-x64.dll" Pack="true" PackagePath="runtimes/win-x64/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+
+        <None Include="runtimes/win-x86/native/datachannel.dll" Pack="true" PackagePath="runtimes/win-x86/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+
+        <None Include="runtimes/win-x86/native/libcrypto-3.dll" Pack="true" PackagePath="runtimes/win-x86/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+
+        <None Include="runtimes/win-x86/native/libssl-3.dll" Pack="true" PackagePath="runtimes/win-x86/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+
+        <None Include="runtimes/linux-x64/native/datachannel.so" Pack="true" PackagePath="runtimes/linux-x64/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+
+        <None Include="runtimes/osx-x64/native/datachannel.dylib" Pack="true" PackagePath="runtimes/osx-x64/native">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 </Project>
