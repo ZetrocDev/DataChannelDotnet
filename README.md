@@ -5,7 +5,7 @@
 [![NuGet](https://img.shields.io/nuget/v/DataChannelDotnet.svg)](https://www.nuget.org/packages/DataChannelDotnet/)
 [![NuGet](https://img.shields.io/nuget/v/DataChannelDotnet.Bindings.svg)](https://www.nuget.org/packages/DataChannelDotnet.Bindings/)
 
-DataChannelDotnet is a high performance, minimal overhead wrapper around [libdatachannel](https://github.com/paullouisageneau/libdatachannel) for WebRtc, it supports both datachannels and media tracks. Raw bindings are generated automatically via [clangsharp](https://github.com/dotnet/ClangSharp) using Github Actions, and are included in the DataChannel.Bindings package.
+DataChannelDotnet is a high performance, minimal overhead wrapper around [libdatachannel](https://github.com/paullouisageneau/libdatachannel) for WebRtc, it supports both datachannels and media tracks. Raw bindings are generated automatically via [clangsharp](https://github.com/dotnet/ClangSharp) using Github Actions, and are included in the DataChannel.Bindings namespace.
 
 
 ### Usage (Managed version)
