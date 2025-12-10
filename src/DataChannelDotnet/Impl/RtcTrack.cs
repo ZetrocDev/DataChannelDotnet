@@ -153,7 +153,14 @@ public sealed class RtcTrack : IRtcTrack
             playoutDelayId = managedArgs.PlayoutDelayId,
             playoutDelayMax = managedArgs.PlayoutDelayMax,
             playoutDelayMin = managedArgs.PlayoutDelayMin,
-            sequenceNumber = managedArgs.SequenceNumber
+            sequenceNumber = managedArgs.SequenceNumber,
+            colorChromaSitingHorz =  managedArgs.ColorChromaSitingHorz,
+            colorChromaSitingVert =  managedArgs.ColorChromaSitingVert,
+            colorMatrix = managedArgs.ColorMatrix,
+            colorPrimaries = managedArgs.ColorMatrix,
+            colorRange = managedArgs.ColorRange,
+            colorSpaceId = managedArgs.ColorSpaceId,
+            colorTransfer = managedArgs.ColorTransfer
         };
 
         action(nativeArgs);

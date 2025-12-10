@@ -4,7 +4,6 @@ using DataChannelDotnet;
 using DataChannelDotnet.Data;
 using DataChannelDotnet.Events;
 using DataChannelDotnet.Impl;
-using System.Drawing;
 
 BenchmarkRunner.Run<Bench>();
 

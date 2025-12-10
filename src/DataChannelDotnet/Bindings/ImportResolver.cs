@@ -3,10 +3,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace DataChannelDotnet.Bindings;
-public static class ImportResolver
+internal static class ImportResolver
 {
     private const string LibraryName = "datachannel";
-
 
 #pragma warning disable CA2255 // The 'ModuleInitializer' attribute should not be used in libraries
     [ModuleInitializer]

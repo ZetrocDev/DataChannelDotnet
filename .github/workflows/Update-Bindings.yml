@@ -295,26 +295,26 @@ jobs:
         - name: Copy libraries to correct locations
           run: |
             # Ensure directories exist
-            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes"
-            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native"
-            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native"
-            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\linux-x64\native"
-            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet.Bindings\runtimes\osx-x64\native"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet\runtimes"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet\runtimes\win-x64\native"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet\runtimes\win-x86\native"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet\runtimes\linux-x64\native"
+            New-Item -ItemType Directory -Force -Path "repo\src\DataChannelDotnet\runtimes\osx-x64\native"
             
-            Copy-Item "artifacts\datachannel-win64\datachannel.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native\"
-            Copy-Item "C:\program files\openssl\libcrypto-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native\"
-            Copy-Item "C:\program files\openssl\libssl-3-x64.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x64\native\"
-            Copy-Item "artifacts\datachannel-win32\datachannel.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native\"
-            Copy-Item "artifacts\libcrypto-win32\libcrypto-3.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native\"
-            Copy-Item "artifacts\libssl-win32\libssl-3.dll" "repo\src\DataChannelDotnet.Bindings\runtimes\win-x86\native\"
-            Copy-Item "artifacts\datachannel-linux64\datachannel.so" "repo\src\DataChannelDotnet.Bindings\runtimes\linux-x64\native\"
-            Copy-Item "artifacts\datachannel-Mac64\datachannel.dylib" "repo\src\DataChannelDotnet.Bindings\runtimes\osx-x64\native\"
+            Copy-Item "artifacts\datachannel-win64\datachannel.dll" "repo\src\DataChannelDotnet\runtimes\win-x64\native\"
+            Copy-Item "C:\program files\openssl\libcrypto-3-x64.dll" "repo\src\DataChannelDotnet\runtimes\win-x64\native\"
+            Copy-Item "C:\program files\openssl\libssl-3-x64.dll" "repo\src\DataChannelDotnet\runtimes\win-x64\native\"
+            Copy-Item "artifacts\datachannel-win32\datachannel.dll" "repo\src\DataChannelDotnet\runtimes\win-x86\native\"
+            Copy-Item "artifacts\libcrypto-win32\libcrypto-3.dll" "repo\src\DataChannelDotnet\runtimes\win-x86\native\"
+            Copy-Item "artifacts\libssl-win32\libssl-3.dll" "repo\src\DataChannelDotnet\runtimes\win-x86\native\"
+            Copy-Item "artifacts\datachannel-linux64\datachannel.so" "repo\src\DataChannelDotnet\runtimes\linux-x64\native\"
+            Copy-Item "artifacts\datachannel-Mac64\datachannel.dylib" "repo\src\DataChannelDotnet\runtimes\osx-x64\native\"
   
         - name: Generate P/Invoke bindings
           run: |
             ClangSharpPInvokeGenerator `
               -f ".\libdatachannel\include\rtc\rtc.h" `
-              -o ".\repo\src\DataChannelDotnet.Bindings\Rtc.cs" `
+              -o ".\repo\src\DataChannelDotnet\Bindings\Rtc.cs" `
               -n "DataChannelDotnet.Bindings" `
               -l "datachannel" `
               -m "Rtc" `
@@ -343,7 +343,7 @@ jobs:
             title: "Update libdatachannel to ${{ needs.get-latest-tag.outputs.latest-tag }}"
             body: |
               ## Summary
-              This PR updates libdatachannel libraries & bindings to version ${{ needs.get-latest-tag.outputs.latest-tag }}.
+              This PR updates libdatachannel to version ${{ needs.get-latest-tag.outputs.latest-tag }}.
   
               ## Changes
               - Regenerated P/Invoke bindings
