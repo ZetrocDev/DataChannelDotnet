@@ -16,4 +16,12 @@ public sealed class RtcPacketizerInitArgs
     public byte PlayoutDelayId { get; set; }
     public ushort PlayoutDelayMin { get; set; }
     public ushort PlayoutDelayMax { get; set; }
+    public byte ColorSpaceId { get; set; }
+    public byte ColorChromaSitingHorz { get; set; }
+    public byte ColorChromaSitingVert { get; set; }
+    public byte ColorRange { get; set; }
+    public byte ColorPrimaries { get; set; }
+    public byte ColorTransfer { get; set; }
+    public byte ColorMatrix { get; set; }
+
 }
