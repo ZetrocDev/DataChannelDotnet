@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 
 namespace DataChannelDotnet.Bindings
@@ -669,13 +670,16 @@ namespace DataChannelDotnet.Bindings
         public static extern int rtcGetWebSocketServerPort(int wsserver);
 
         [DllImport("datachannel", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern int rtcSetThreadPoolSize([NativeTypeName("unsigned int")] uint count);
+
+        [DllImport("datachannel", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern int rtcSetSctpSettings([NativeTypeName("const rtcSctpSettings *")] rtcSctpSettings* settings);
+
+        [DllImport("datachannel", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void rtcPreload();
 
         [DllImport("datachannel", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void rtcCleanup();
-
-        [DllImport("datachannel", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern int rtcSetSctpSettings([NativeTypeName("const rtcSctpSettings *")] rtcSctpSettings* settings);
 
         [NativeTypeName("#define RTC_ENABLE_WEBSOCKET 1")]
         public const int RTC_ENABLE_WEBSOCKET = 1;
